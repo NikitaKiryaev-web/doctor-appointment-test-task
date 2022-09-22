@@ -18,6 +18,7 @@
 
 .dadata-suggestions-list {
   position: absolute;
+  top: 40px;
   z-index: 10;
   width: 100%;
   display: flex;
@@ -25,4 +26,12 @@
   background-color: #fff;
   max-height: 200px;
   overflow-y: scroll;
+  border-radius: 0 0 0.375rem 0.375rem;
+  padding: 0 7px;
+}
+
+.dadata-suggestions-list__item:hover {
+  cursor: pointer;
+  opacity: 0.8;
+  transition: 0.3s;
 }

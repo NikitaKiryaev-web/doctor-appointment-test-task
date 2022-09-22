@@ -1,7 +1,7 @@
 <template>
   <b-form
     @submit="onSubmit"
-    class="border border-primary p-3 rounded bg-white mx-2 w-100 w-75 mx-lg-0"
+    class="border border-primary p-3 rounded bg-white mx-2 col-11 mx-lg-0 col-lg-4"
     novalidate
   >
     <b-form-group
@@ -70,33 +70,55 @@
       ></b-form-input>
       <span class="text-danger mt-1" v-if="errors.date">{{ errors.date }}</span>
     </b-form-group>
+    <AddresInputVue />
     <b-form-group
       id="input-group-5"
-      label="Адрес"
+      label="Время"
       label-for="input-5"
       class="text-dark"
     >
-      <vue-dadata
-        :token="'6206b7f090b60ec08aff83c098f2dc5c6232444c'"
-        v-model="location"
-        :classes="{ suggestions: 'dadata-suggestions-list' }"
-      />
-      <span class="text-danger mt-1" v-if="errors.location">{{
-        errors.location
-      }}</span>
+      <b-form-select
+        id="input-5"
+        placeholder="Выберите время"
+        required
+        v-model="time"
+        :options="options"
+      ></b-form-select>
+      <span class="text-danger mt-1" v-if="errors.time">{{ errors.time }}</span>
     </b-form-group>
+    <b-button class="w-100 mx-auto d-block" type="submit" variant="success"
+      >Отправить</b-button
+    >
+    <span
+      class="text-danger w-100 d-inline-block mt-1 text-center"
+      v-if="submitError"
+      >{{ submitError }}</span
+    >
   </b-form>
 </template>
 
 <script>
 import { mapGetters, mapState } from "vuex";
 import { store } from "../store";
-import { VueDadata } from "vue-dadata";
-import "vue-dadata/dist/style.css";
+import AddresInputVue from "./AddresInput.vue";
 export default {
   name: "HomeComponent",
-  components: { VueDadata },
+  components: { AddresInputVue },
   computed: {
+    options() {
+      return this.periods.map((period) => {
+        return new Date().getHours() >= period
+          ? {
+              value: `${period}:00-${period + 1}:00`,
+              text: `${period}:00-${period + 1}:00`,
+              disabled: true,
+            }
+          : {
+              value: `${period}:00-${period + 1}:00`,
+              text: `${period}:00-${period + 1}:00`,
+            };
+      });
+    },
     name: {
       get() {
         return store.state.form.name;
@@ -129,7 +151,7 @@ export default {
           this.setError("age", "Поле обязательно");
           return;
         }
-        store.commit("setAge", Number(val));
+        store.commit("setAge", val);
         if (Number(val) >= 0 && Number(val) <= 150) {
           if (val[0] === "0" && val.length > 1) {
             this.setError("age", "Укажите корректный возраст");
@@ -147,7 +169,7 @@ export default {
       },
       set(val) {
         store.commit("setEmail", val);
-        if (val === "") {
+        if (!val) {
           this.setError("email", "Поле обязательно");
           return;
         }
@@ -174,26 +196,51 @@ export default {
           return;
         }
         this.setError("date");
-        store.commit("setDate", val);
+        store.commit("setDate", val.split("-").reverse().join("."));
       },
     },
-    location: {
+    time: {
       get() {
-        return store.state.form.location;
+        return store.state.form.time;
       },
       set(val) {
-        store.commit("setLocation", val);
-        console.log(store.state.form.location);
+        if (!val) {
+          this.setError("time", "Поле обязательно");
+          return;
+        }
+        this.setError("time");
+        store.commit("setTime", val);
       },
     },
     ...mapState({
       errors: (state) => state.errors,
+      periods: (state) => state.periods,
+      submitError: (state) => state.submitError,
+      form: (state) => state.form,
     }),
     ...mapGetters(["dateEnd", "dateStart"]),
   },
   methods: {
     onSubmit(event) {
       event.preventDefault();
+      const errorKeys = Object.keys(this.errors);
+      const formKeys = Object.keys(this.errors);
+      if (
+        !errorKeys.every((key) => this.errors[key] === "") ||
+        formKeys.some((key) => this.form[key] === "")
+      ) {
+        store.commit("setSubmitError", "Данные неверны");
+        setTimeout(() => {
+          store.commit("setSubmitError");
+        }, 2000);
+        const emptyFields = formKeys.filter((key) => this.form[key] === "");
+        emptyFields.forEach((field) =>
+          this.setError(`${field}`, "Поле обязательно")
+        );
+        return;
+      }
+      store.commit("setSubmitError");
+      this.$router.push("success");
     },
     setError(type, value = "") {
       store.commit("setError", {
